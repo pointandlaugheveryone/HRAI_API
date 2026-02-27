@@ -1,10 +1,10 @@
 from lookups import load_data, get_meta_by_id, load_relations
-from datamodels import Skill
-from typing import Dict, List, Optional
+from models import Skill
+from typing import Dict, List, Tuple
 import numpy as np
 
 
-def best_occ_per_domain(occ_scores):
+def best_occ_per_domain(occ_scores: Dict[str, float]) -> Dict[str, Tuple[str, float]]:
     """
     esco categorises all occupations into top 10 most generic domains
     being part of the project's goal, this function finds an occupation from each of these
@@ -12,9 +12,11 @@ def best_occ_per_domain(occ_scores):
     indexes = load_data()
     occ_by_id = get_meta_by_id(indexes['occupation']['metadata'])
 
-    best_domain_occ = {}
+    best_domain_occ: Dict[str, Tuple[str, float]] = {}
     for occ_id, score in occ_scores.items():
         meta = occ_by_id.get(occ_id)
+        if not meta:
+            continue
         code = meta.get('code')
         domain = code[0]
         current = best_domain_occ.get(domain)
@@ -24,13 +26,12 @@ def best_occ_per_domain(occ_scores):
     return best_domain_occ
 
 
-def skills_to_score(skills, skill_to_occupations) -> Dict[str, float]:
-    occ_scores = {}
+def skills_to_score(skills: List[Skill], skill_to_occupations: Dict[str, List[Tuple[str, str]]]) -> Dict[str, float]:
+    occ_scores: Dict[str, float] = {}
     for skill in skills:
         for occ_id, relation_type in skill_to_occupations.get(skill.id, []):
             weight = 1.0 if relation_type.lower() == 'essential' else 0.7
-
-            occ_scores[occ_id] = max(occ_scores.get(occ_id,''),skill.score * weight)
+            occ_scores[occ_id] = max(occ_scores.get(occ_id, 0.0), skill.score * weight)
     return occ_scores
 
 
@@ -53,7 +54,7 @@ def expand_skills(
     norm = np.linalg.norm(ref_vec)
     if norm > 0: ref_vec /= norm
 
-    scored_skills = []
+    scored_skills: List[Tuple[str, str, float]] = []
     for id, relation in related:
         skill_idx = indexes['skill']['id_to_idx'].get(id)
         skill_vec = np.array(
@@ -67,6 +68,8 @@ def expand_skills(
     new_skills: List[Skill] = []
     for id, relation, score in scored_skills[:limit]:
         meta = skill_by_id.get(id)
+        if not meta:
+            continue
         new_skills.append(
             Skill(
                 id=id,
@@ -74,6 +77,7 @@ def expand_skills(
                 label=meta.get('preferred_label', ''),
                 relation_type=relation,
                 score=score,
+                source_text=meta.get('preferred_label', ''),
             ))
 
     return new_skills
