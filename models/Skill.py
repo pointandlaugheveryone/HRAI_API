@@ -1,7 +1,7 @@
-from typing import Optional
-from pydantic import BaseModel
+from dataclasses import dataclass
 
-class Skill(BaseModel):
+@dataclass
+class Skill:
     id: str
     esco_uri: str
     label: str
