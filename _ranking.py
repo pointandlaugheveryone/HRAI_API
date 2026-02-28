@@ -1,5 +1,5 @@
-from lookups import load_data, get_meta_by_id, load_relations
-from models import Skill
+from _lookups import load_data, get_meta_by_id, load_relations
+from _models import Skill
 from typing import Dict, List, Tuple
 import numpy as np
 

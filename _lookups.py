@@ -1,5 +1,5 @@
-from models import Entity
-from settings import config
+from _models import Entity
+from config import config
 
 import os, json, pickle
 from typing import Any, Dict, List, Tuple
@@ -10,33 +10,6 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 
-@lru_cache(maxsize=1)
-def load_data() -> Dict[str, Dict[str, Any]]:
-    db: Dict[str, Dict[str, Any]] = {}
-    names = ["skill", "occupation", "skill_group", "isco_group", "all"]
-    for name in names:
-        idx = faiss.read_index(os.path.join(config.db_dir, f"{name}.index"))
-        with open(os.path.join(config.db_dir, f"{name}_metadata.json"), "r", encoding="utf-8") as f:
-            metadata = json.load(f)
-        with open(os.path.join(config.pickle_dir, f"{name}_id-idx.pkl"), "rb") as f:
-            id_idx = pickle.load(f)
-
-        db[name] = {
-            "index": idx,
-            "metadata": metadata,
-            "id_to_idx": id_idx,
-        }
-    return db
-
-
-def load_relations() -> Tuple[Dict[str, List[Tuple[str, str]]], Dict[str, List[Tuple[str, str]]]]:
-    occ2s_path = os.path.join(config.data_dir, 'occ_to_skill.json')
-    s2occ_path = os.path.join(config.data_dir, 'skill_to_occ.json')
-    with open(occ2s_path, 'r', encoding="utf-8") as o: occ2s = json.loads(o.read())
-    with open(s2occ_path, 'r', encoding="utf-8") as s: s2occ = json.loads(s.read())
-    return occ2s, s2occ
-
-
 def get_meta_by_id(metadata: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     return {item.get("id"): item for item in metadata}
 
@@ -45,7 +18,7 @@ def query(
         index,
         metadata,
         query_vector: np.float32,
-        top_n: int = config.top_result_n
+        top_n: int = config.result_n
 ) -> List[List[Tuple[Dict[str, Any], float]]]:
     scores, indices = index.search(query_vector, top_n)
     results = []
@@ -68,6 +41,7 @@ def match_any(entities: List[Entity], encoder: SentenceTransformer, top_n: int =
         texts,
         normalize_embeddings=config.normalize_embeddings,
         convert_to_numpy=True,
+        show_progress_bar=False,
     )
 
     scores = {}

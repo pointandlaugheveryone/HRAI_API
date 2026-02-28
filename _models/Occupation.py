@@ -1,8 +1,8 @@
 from typing import List
-import Skill
+from _models.Skill import Skill
+from pydantic import BaseModel
 
-
-class Occupation:
+class Occupation(BaseModel):
     id: str
     esco_uri: str
     label: str
@@ -10,6 +10,6 @@ class Occupation:
     isco_code: str
     score: float
 
-class OccupationResponse:
+class OccupationResponse(BaseModel):
     occupation: Occupation
     extra_skills: List[Skill]

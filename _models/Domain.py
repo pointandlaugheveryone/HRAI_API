@@ -1,5 +1,6 @@
 from typing import List
-from models import Occupation, Skill
+from _models.Occupation import Occupation
+from _models.Skill import Skill
 from pydantic import BaseModel
 
 

@@ -1,16 +1,16 @@
 from typing import List, Optional
-import Skill
-import Domain
-from Occupation import OccupationResponse
-import Entity
+from _models.Skill import Skill
+from _models.Domain import Domain
+from _models.Occupation import OccupationResponse
+from _models.Entity import Entity
 from pydantic import BaseModel
 
-from settings import config
+from config import config
 
 
 class LookupRequest(BaseModel):
     entities: List[Entity]
-    top_n: int = config.top_result_n
+    top_n: int = config.result_n
     extra_skill_limit: int = 25
 
 
