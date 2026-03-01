@@ -20,7 +20,7 @@ class Config:
     ### embedding configuration
     batch_size: int = 256 # how many text spans to embed per encoder call
     normalize_embeddings: bool = True # enables cosine similarity accuracy
-    match_cutoff: float = 0.7   # filters vector search results by similarity
+    match_cutoff: float = 0.65   # filters vector search results by similarity
                                 # 0.7 basically at least returns some skill entity
     result_n = 5 # how many entities to search for when querying a manually input string
     hf_token: str = os.getenv('HF_TOKEN', '')

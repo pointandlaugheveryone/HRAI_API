@@ -28,8 +28,8 @@ async def get_resume_info(
         raise HTTPException(status_code=400, detail=str(e))
 
     entities = extract_from_resume(text)
-    skills = [e for e in entities if e.entity_type == 'skill']
-    occupations = [e for e in entities if e.entity_type == 'occupation']
+    skills = list(set([e for e in entities if e.entity_type == 'skill']))
+    occupations = list(set([e for e in entities if e.entity_type == 'occupation']))
 
     suggestions = match_occupations(skills, occupations, target_job)
     target_suggestion = None
@@ -59,6 +59,8 @@ async def get_resume_info_isco(file: UploadFile = File(...)):
 
     suggestions = match_occupations(skills, occupations, None)
     domains = get_domain_skills(suggestions)
+    for d in domains:
+        d.occupations = list(set(d.occupations)) # deduplicate
 
     return DomainResponse(domains=domains)
 
@@ -109,4 +111,4 @@ def query_entities(req: QueryRequest):
     """
     label = req.entity_type
     results = query_type([req.text], label, search_k=req.n if req.n else 5)
-    return results
+    return results # deduplicate

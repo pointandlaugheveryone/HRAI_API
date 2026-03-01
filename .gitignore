@@ -3,3 +3,7 @@ env/
 *__pycache__/
 .ipynb_checkpoints/
 .idea/
+*pycharm-support-libs/
+
+# im not publishing my resume here
+*Životopis.pdf
