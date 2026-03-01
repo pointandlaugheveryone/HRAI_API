@@ -5,7 +5,7 @@ from typing import Dict, List, Set, Optional
 from query import query_type
 from models.Suggestion import Suggestion
 from models.DomainResult import DomainResult
-from setup import get_relations
+from setup import get_relations, get_metadata_lookups
 from config import config
 
 
@@ -32,6 +32,9 @@ def match_occupations(
     """
 
     relations, _ = get_relations()
+    uri_to_id, id_to_meta = get_metadata_lookups()
+
+    # Build set of skill URIs the user actually has
     extracted_uris: Set[str] = {s.esco_uri for s in skills}
     suggestions: List[Suggestion] = []
 
@@ -40,22 +43,32 @@ def match_occupations(
 
 
     for occ in occupations:
-        # lookup essential/optional skills 
-        occ_uri = occ.esco_uri
-        related_skills = relations.get(occ_uri, [])
-        essential_skills = [s for s in related_skills if s.get('relation_type') == 'essential']
+        # Resolve occupation esco_uri → metadata id (e.g. "key_620") for relation lookup
+        occ_key = uri_to_id.get(occ.esco_uri, '')
+        # Relation entries are [skill_id, relation_type] lists
+        related_skills = relations.get(occ_key, [])
 
+        essential_count = 0
         missing: List[Skill] = []
         matched_count = 0
-        for skill in related_skills:
-            uri = skill.get('skill_uri', '')
-            if uri in extracted_uris: matched_count += 1
+
+        for entry in related_skills:
+            skill_id, relation_type = entry[0], entry[1]
+            # Resolve skill id → metadata to get esco_uri and label
+            skill_meta = id_to_meta.get(skill_id, {})
+            skill_uri = skill_meta.get('esco_uri', '')
+
+            if relation_type == 'essential':
+                essential_count += 1
+
+            if skill_uri in extracted_uris:
+                matched_count += 1
             else:
                 missing.append(Skill(
-                    id=skill.get('id', ''),
-                    esco_uri=uri,
-                    label=skill.get('preferred_label', ''),
-                    relation_type=skill.get('relation_type', ''),
+                    id=skill_id,
+                    esco_uri=skill_uri,
+                    label=skill_meta.get('preferred_label', ''),
+                    relation_type=relation_type,
                     score=0.0,
                     source_text='',
                 ))
@@ -63,7 +76,7 @@ def match_occupations(
         if not target_job and matched_count < config.min_skills:
             continue
 
-        total_essential = len(essential_skills) if essential_skills else 1
+        total_essential = essential_count if essential_count else 1
         # Match score is normalized by essential skills so it stays comparable across jobs
         match_score = matched_count / max(total_essential, 1)
 

@@ -108,5 +108,5 @@ def query_entities(req: QueryRequest):
     → n EntityResults
     """
     label = req.entity_type
-    results = query_type([req.text], label, search_k=req.n if req.n else None)
+    results = query_type([req.text], label, search_k=req.n if req.n else 5)
     return results

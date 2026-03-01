@@ -27,6 +27,21 @@ def get_relations():
     with open(s2occ_path, 'r', encoding="utf-8") as s: s2occ = json.loads(s.read())
     return occ2s, s2occ
 
+
+@lru_cache(maxsize=1)
+def get_metadata_lookups():
+    """
+    Build cached lookup dicts:
+      - uri_to_id: esco_uri -> metadata id (e.g. 'key_620')
+      - id_to_meta: metadata id -> full metadata dict
+    Covers all entity types.
+    """
+    with open(os.path.join(config.meta_dir, 'all.json'), 'r', encoding='utf-8') as f:
+        all_meta = json.load(f)
+    uri_to_id = {m['esco_uri']: m['id'] for m in all_meta}
+    id_to_meta = {m['id']: m for m in all_meta}
+    return uri_to_id, id_to_meta
+
 @lru_cache(maxsize=1)
 def get_encoder():
     word_embedding = models.Transformer(
