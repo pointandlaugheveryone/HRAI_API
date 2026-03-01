@@ -1,14 +1,18 @@
+from typing import List
 from stop_words import get_stop_words
 from ufal.udpipe import Model, Pipeline, ProcessingError
 
 
 from config import config
 
-stopwords = set(get_stop_words('czech'))
-tag_model = Model.load(config.tagger_name)
+stopwords: set[str] = set(get_stop_words('czech'))
+tag_model: Model = Model.load(config.tagger_name)
 
 
-def text_to_ngrams(text: str) -> str:
+def text_to_ngrams(text: str) -> List[str]:
+    """
+    create deduplicated n-grams for matching
+    """
     error = ProcessingError()
 
     pipeline = Pipeline(
@@ -65,7 +69,7 @@ def text_to_ngrams(text: str) -> str:
                 span_forms = forms[i:i + n]
                 span_upos = pos_tags[i:i + n]
 
-                # since skill words are mostly nouns, skip ngrams without any
+                # skill words are mostly nouns; skip ngrams without any
                 if not any(tag in {'NOUN', 'ADJ'}
                            for tag in span_upos):
                     continue
@@ -75,9 +79,9 @@ def text_to_ngrams(text: str) -> str:
                 first_word = first['form'].lower()
                 last_word = last['form'].lower()
 
-                # drop spans starting/ending with conjunctions or stopwords
+                # drop spans starting/ending as uncommon POS to reduce ngram count
                 if first['upos'] in {'CCONJ', 'SCONJ'} or \
-                        last['upos'] in {'CCONJ', 'SCONJ'} or \
+                        last['upos'] in {'CCONJ', 'SCONJ', 'ADJ'} or \
                         first_word in stopwords or \
                         last_word in stopwords:
                     continue

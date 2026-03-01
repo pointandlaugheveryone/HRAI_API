@@ -1,15 +1,13 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 from models.Skill import Skill
 
 
 class ManualContentRequest(BaseModel):
-    skills: List[Skill]
-
-class ManualContentLabeledRequest(BaseModel):
-    target_job: str
+    target_job: Optional[str]
     skills: List[Skill]
 
 class ResumeRequest(BaseModel):
+    target_job: Optional[str]
     content: str
