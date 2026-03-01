@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 @dataclass
-class Result:
+class EntityResult:
     id: int
     cosine_score: float
     entity_type: str
