@@ -1,4 +1,5 @@
 env/
 .env
 *__pycache__/
-TODO.md
+.ipynb_checkpoints/
+.idea/

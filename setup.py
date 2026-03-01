@@ -12,13 +12,11 @@ def get_database(entity_type):
     idx = faiss.read_index(os.path.join(config.db_dir, f"{entity_type}.index"))
     with open(os.path.join(config.meta_dir, f"{entity_type}.json"), "r", encoding="utf-8") as f:
         metadata = json.load(f)
-    with open(os.path.join(config.pickle_dir, f"{entity_type}.pkl"), "rb") as f:
-        id_idx = pickle.load(f)
+
 
     return {
         "index": idx,
-        "metadata": metadata,
-        "id_to_index": id_idx,
+        "metadata": metadata
     }
 
 @lru_cache(maxsize=1)

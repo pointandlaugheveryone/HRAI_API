@@ -12,7 +12,7 @@ class Config:
 
     model_name: str = 'Seznam/simcse-dist-mpnet-paracrawl-cs-en'
 
-    tagger_name: str = 'czech-pdt-2.5.udpipe'
+    tagger_name: str = '_czech_pdt_2.5.udpipe'
     max_ngram: int = 3 # nspan range
     max_ents: int = 40 # maximum result entities found in input by score, can be set higher with better hardware
     min_skills: int = 5 # minimum skills for an occupation to be detected from user input
