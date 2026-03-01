@@ -65,7 +65,7 @@ def extract_from_resume(text: str) -> List[EntityResult]:
 # noinspection DuplicatedCode
 def query_type(
         ents: List[str],
-        label: str,
+        label: str = 'all',
         search_k=config.result_n
 ) -> List[EntityResult]:
     """

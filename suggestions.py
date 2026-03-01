@@ -6,6 +6,7 @@ from query import query_type
 from models.Suggestion import Suggestion
 from models.DomainResult import DomainResult
 from setup import get_relations
+from config import config
 
 
 ISCO_MAP = {
@@ -30,23 +31,15 @@ def match_occupations(
     score how well extracted skills match the occupation's esco skill list
     """
 
-    relations: Dict[str, List[Dict[str, str]]] = get_relations()
+    relations, _ = get_relations()
     extracted_uris: Set[str] = {s.esco_uri for s in skills}
-
     suggestions: List[Suggestion] = []
 
-    target_matches: List[EntityResult] = []
     if target_job:
-        # When a target label is supplied, only consider the closest matching occupation
-        target_matches = query_type([target_job], 'occupation', search_k=1)
-        if not target_matches:
-            return []
+        occupations = query_type([target_job], 'occupation', search_k=1)
 
-    selected_occupations = target_matches if target_matches else (occupations or [])
-    if not selected_occupations:
-        return []
 
-    for occ in selected_occupations:
+    for occ in occupations:
         # lookup essential/optional skills 
         occ_uri = occ.esco_uri
         related_skills = relations.get(occ_uri, [])
@@ -66,6 +59,9 @@ def match_occupations(
                     score=0.0,
                     source_text='',
                 ))
+
+        if not target_job and matched_count < config.min_skills:
+            continue
 
         total_essential = len(essential_skills) if essential_skills else 1
         # Match score is normalized by essential skills so it stays comparable across jobs

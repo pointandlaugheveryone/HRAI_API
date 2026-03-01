@@ -1,4 +1,5 @@
 import os, pickle, json
+from functools import lru_cache
 
 from config import config
 
@@ -6,6 +7,7 @@ import faiss
 from sentence_transformers import models, SentenceTransformer
 
 
+@lru_cache(maxsize=8)
 def get_database(entity_type):
     idx = faiss.read_index(os.path.join(config.db_dir, f"{entity_type}.index"))
     with open(os.path.join(config.meta_dir, f"{entity_type}.json"), "r", encoding="utf-8") as f:
@@ -19,6 +21,7 @@ def get_database(entity_type):
         "id_to_index": id_idx,
     }
 
+@lru_cache(maxsize=1)
 def get_relations():
     occ2s_path = os.path.join(config.data_dir, 'occ_to_skill.json')
     s2occ_path = os.path.join(config.data_dir, 'skill_to_occ.json')
@@ -26,6 +29,7 @@ def get_relations():
     with open(s2occ_path, 'r', encoding="utf-8") as s: s2occ = json.loads(s.read())
     return occ2s, s2occ
 
+@lru_cache(maxsize=1)
 def get_encoder():
     word_embedding = models.Transformer(
         model_name_or_path=config.model_name,
