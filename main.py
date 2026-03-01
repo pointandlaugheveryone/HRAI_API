@@ -35,9 +35,9 @@ async def get_resume_info(
     target_suggestion = None
     if target_job:
         target_suggestions = match_occupations(skills, None, target_job)
-        target_suggestion = target_suggestions[0] if target_suggestions else None
+        target_suggestion = target_suggestions[0]
 
-    return SuggestionResponse(top_suggestion=suggestions[0], target_suggestion=target_suggestion)
+    return SuggestionResponse(top_suggestion=suggestions[0] if suggestions else None, target_suggestion=target_suggestion)
 
 
 @app.post("/resume/domains", response_model=DomainResponse)
