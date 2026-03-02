@@ -17,30 +17,27 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
         text = page.extract_text()
         if text:
             text_parts.append(text)
-    return '\n'.join(text_parts)
+    return ', '.join(text_parts)
 
 
 def extract_text_from_docx(file_bytes: bytes) -> str:
     doc = DocxDocument(BytesIO(file_bytes))
-    return '\n'.join(para.text for para in doc.paragraphs if para.text)
+    return ', '.join(para.text for para in doc.paragraphs)
 
 
 def extract_text_from_odt(file_bytes: bytes) -> str:
     doc = OdfDocument(BytesIO(file_bytes))
-    body = doc.body
-    return body.get_formatted_text() if body else ''
+    return doc.body.get_formatted_text()
 
 
-def extract_text(filename: str, file_bytes: bytes) -> str:
-    filename_lower = filename.lower()
-    
-    if filename_lower.endswith('.pdf'):
+def extract_text(file_bytes: bytes, filename: str = '') -> str:
+    fn = filename.lower()
+    if fn.endswith('.pdf'):
         return extract_text_from_pdf(file_bytes)
-    elif filename_lower.endswith('.docx'):
+    elif fn.endswith('.docx'):
         return extract_text_from_docx(file_bytes)
-    elif filename_lower.endswith('.odt'):
+    elif fn.endswith('.odt'):
         return extract_text_from_odt(file_bytes)
-
     else:
         raise UnsupportedFileTypeError(
             f"Unsupported file type. Supported formats: pdf, docx, odt. Use /text"

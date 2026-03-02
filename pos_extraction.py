@@ -2,11 +2,11 @@ from typing import List
 from stop_words import get_stop_words
 from ufal.udpipe import Model, Pipeline, ProcessingError
 
+from config import conf
 
-from config import config
 
 stopwords: set[str] = set(get_stop_words('czech'))
-tag_model: Model = Model.load(config.tagger_name)
+tag_model: Model = Model.load(conf.tagger_name)
 
 
 def text_to_ngrams(text: str) -> List[str]:
@@ -62,7 +62,7 @@ def text_to_ngrams(text: str) -> List[str]:
         forms = [t['form'] for t in tokens]
         pos_tags = [t['upos'] for t in tokens]
 
-        for n in range(1, config.max_ngram + 1):
+        for n in range(1, conf.max_ngram + 1):
             # iterate over sentence tokens to create ngrams of decreasing size
             for i in range(len(tokens) - n + 1):
                 span_tokens = tokens[i:i + n]

@@ -1,51 +1,63 @@
-import os, pickle, json
+import os, json
 from functools import lru_cache
+from pathlib import Path
 
-from config import config
+from config import conf
 
 import faiss
 from sentence_transformers import models, SentenceTransformer
 
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize=5)
 def get_database(entity_type):
-    idx = faiss.read_index(os.path.join(config.db_dir, f"{entity_type}.index"))
-    with open(os.path.join(config.meta_dir, f"{entity_type}.json"), "r", encoding="utf-8") as f:
-        metadata = json.load(f)
+    idx = faiss.read_index(os.path.join(conf.db_dir, f"{entity_type}.index"))
+    return idx
+
+@lru_cache(maxsize=1)
+def get_metadata():
+    with open(os.path.join(conf.data_dir, f"key_to_ent.json"), "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
-    return {
-        "index": idx,
-        "metadata": metadata
-    }
+@lru_cache(maxsize=1)
+def _get_id_ix_map():
+    return json.loads(
+        Path(
+            os.path.join(conf.data_dir, 'id_idx.json')
+        ).read_text(encoding='utf-8')
+    )
+
+
+@lru_cache(maxsize=1)
+def _get_ix_id_map():
+    return json.loads(
+        Path(
+            os.path.join(conf.data_dir, 'idx_id.json')
+        ).read_text(encoding='utf-8')
+    )
+
+
+def id2idx(id: str):
+    return _get_id_ix_map()[id]
+
+
+def idx2id(idx: int):
+    return _get_ix_id_map()[idx]
+
 
 @lru_cache(maxsize=1)
 def get_relations():
-    occ2s_path = os.path.join(config.data_dir, 'occ_to_skill.json')
-    s2occ_path = os.path.join(config.data_dir, 'skill_to_occ.json')
+    occ2s_path = os.path.join(conf.data_dir, 'occ_to_skill.json')
+    s2occ_path = os.path.join(conf.data_dir, 'skill_to_occ.json')
     with open(occ2s_path, 'r', encoding="utf-8") as o: occ2s = json.loads(o.read())
     with open(s2occ_path, 'r', encoding="utf-8") as s: s2occ = json.loads(s.read())
     return occ2s, s2occ
 
 
 @lru_cache(maxsize=1)
-def get_metadata_lookups():
-    """
-    Build cached lookup dicts:
-      - uri_to_id: esco_uri -> metadata id (e.g. 'key_620')
-      - id_to_meta: metadata id -> full metadata dict
-    Covers all entity types.
-    """
-    with open(os.path.join(config.meta_dir, 'all.json'), 'r', encoding='utf-8') as f:
-        all_meta = json.load(f)
-    uri_to_id = {m['esco_uri']: m['id'] for m in all_meta}
-    id_to_meta = {m['id']: m for m in all_meta}
-    return uri_to_id, id_to_meta
-
-@lru_cache(maxsize=1)
 def get_encoder():
     word_embedding = models.Transformer(
-        model_name_or_path=config.model_name,
+        model_name_or_path=conf.model_name,
         max_seq_length=128,
     )
 
