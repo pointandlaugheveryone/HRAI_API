@@ -1,14 +1,11 @@
 import os, json
 from functools import lru_cache
-from pathlib import Path
 
 from config import conf
 
-import faiss
 from sentence_transformers import models, SentenceTransformer
 
 
-@lru_cache(maxsize=1)
 def get_relations():
     occ2s_path = os.path.join(conf.data_dir, 'occ_to_skill.json')
     s2occ_path = os.path.join(conf.data_dir, 'skill_to_occ.json')
@@ -17,7 +14,6 @@ def get_relations():
     return occ2s, s2occ
 
 
-@lru_cache(maxsize=1)
 def get_encoder():
     word_embedding = models.Transformer(
         model_name_or_path=conf.model_name,

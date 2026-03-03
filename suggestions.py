@@ -5,7 +5,7 @@ from models.Suggestion import Suggestion
 from models.DomainResult import DomainResult, CODE_TO_DOMAIN
 from load import get_relations
 
-from typing import Dict, List, Set
+from typing import Dict, List
 
 
 def get_expanded_skills(
@@ -14,15 +14,15 @@ def get_expanded_skills(
 ) -> List[Suggestion]:
 
     skills = [e for e in entities if e.entity_type == 'skill']
-    occupations = [e for e in entities if e.entity_type == 'occupation' or 'isco_group']
-    skill_set = Set([s.id for s in skills])
+    occupations = [e for e in entities if e.entity_type in {'occupation', 'isco_group'}]
+    skill_set = set([s.id for s in skills])
 
     occ_to_skill, skill_to_occ = get_relations()
     suggestions = []
 
     # expand skills for occupations/jobs that user already has
     for occ in occupations:
-        occ_skills = occ_to_skill.get(occ.id, [])
+        occ_skills = occ_to_skill.get(occ.id, {})
         missing_skills = []
 
         for skill_id,rel_type in occ_skills.items():
@@ -34,21 +34,22 @@ def get_expanded_skills(
                     esco_uri=skill_meta.get('esco_uri',''),
                     label=skill_meta.get('preferred_label', ''),
                     relation_type=rel_type,
-                    score=None, # unused here
                     description=skill_meta.get('description',''),
                 ))
 
         # create occ object with information
-        occ_meta = metadata.get(occ.id,'')
-        job_title = occ_meta['preferred_label']
-        if occ_meta['alt_label']: job_title = job_title + f' / {occ_meta['alt_label']}'
+        occ_meta = metadata.get(occ.id,{})
+        job_title = occ_meta.get('preferred_label', '')
+        alt_label = occ_meta.get('alt_label', '')
+        if alt_label:
+            job_title = f"{job_title} / {alt_label}"
         occ_match = Occupation(
             id=occ.id,
             cosine_score=occ.cosine_score,
             esco_uri=occ.esco_uri,
             label=job_title,
             code=occ.code,
-            description=occ_meta['description'],
+            description=occ_meta.get('description',''),
         )
 
         suggestions.append(Suggestion(
@@ -62,8 +63,8 @@ def get_expanded_skills(
 def get_domain_reports(suggestions: List[Suggestion]) -> List[DomainResult]: #TODO: add param target_domain (eg. it)
     domain_to_suggestions: Dict[str, List[Suggestion]] = {}
     for suggestion in suggestions:
-        code = suggestion.occupation.code or ''
-        domain_key = code[:1]
+        code = str(suggestion.occupation.code) or ''
+        domain_key = code[:2]
         domain_name = CODE_TO_DOMAIN.get(domain_key, 'Other')
         domain_to_suggestions.setdefault(domain_name, []).append(suggestion)
 

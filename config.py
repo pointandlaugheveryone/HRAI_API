@@ -4,6 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class Config:
     data_dir: str = os.path.join(os.getcwd(), 'data')
+    db_dir: str = os.path.join(os.getcwd(), 'data')
 
     model_name: str = 'Seznam/simcse-dist-mpnet-paracrawl-cs-en'
     tagger_name: str = '_czech_pdt_2.5.udpipe'

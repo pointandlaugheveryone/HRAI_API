@@ -5,7 +5,7 @@ from docx import Document as DocxDocument
 from odfdo import Document as OdfDocument
 
 
-extensions = {'.pdf', '.docx', '.odt'}
+extensions = {'.pdf'}
 class UnsupportedFileTypeError(Exception):
     pass
 
@@ -19,7 +19,9 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
             text_parts.append(text)
     return ', '.join(text_parts)
 
-
+'''
+TODO: for some reason docx and odfdo dont work. 
+'''
 def extract_text_from_docx(file_bytes: bytes) -> str:
     doc = DocxDocument(BytesIO(file_bytes))
     return ', '.join(para.text for para in doc.paragraphs)
