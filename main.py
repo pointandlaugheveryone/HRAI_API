@@ -1,6 +1,12 @@
+import json
+import os
 from typing import List, Optional
 from pathlib import Path
 
+import faiss
+
+from config import conf
+from load import get_encoder
 from models.EntityResult import EntityResult
 from models.RequestModel import ManualContentRequest, QueryRequest
 from models.ResponseModel import SkillsResponse, SuggestionResponse, DomainResponse, TargetJobResponse
@@ -11,7 +17,16 @@ from parse_doc import extract_text, UnsupportedFileTypeError
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 
 
+
+db = faiss.read_index(os.path.join(conf.db_dir, f"all.index"))
+
+with open(os.path.join(conf.data_dir, f"key_to_ent.json"), "r", encoding="utf-8") as f:
+    metadata = json.load(f)
+
+model = get_encoder()
+
 app = FastAPI(title="HRAI API")
+
 
 @app.post("/resume", response_model=SuggestionResponse)
 async def post_resume(
@@ -94,5 +109,5 @@ def post_text_goal(req: ManualContentRequest):
 @app.post("/query", response_model=List[EntityResult])
 def query(req: QueryRequest):
     label = req.entity_type
-    results = query_type([req.text], label, search_k=req.n if req.n else 5)
+    results = query_type([req.text], label, min_score=req.n if req.n else 5)
     return results

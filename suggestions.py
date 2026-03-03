@@ -5,7 +5,7 @@ from typing import Dict, List, Set, Optional
 from query import query_type
 from models.Suggestion import Suggestion
 from models.DomainResult import DomainResult, CODE_TO_DOMAIN
-from setup import get_relations, get_metadata
+from load import get_relations, get_metadata
 from config import conf
 
 
@@ -44,7 +44,7 @@ def match_occupations(
     suggestions: List[Suggestion] = []
 
     if target_job:
-        occupations = query_type([target_job], 'occupation', search_k=1)
+        occupations = query_type([target_job], 'occupation', min_score=1)
 
     if not occupations:
         # Reverse lookup: find all occupations related to user's skills
@@ -97,7 +97,7 @@ def match_occupations(
                     source_text='',
                 ))
 
-        if not target_job and matched_count < config.min_skills:
+        if not target_job and matched_count < conf.min_skills:
             continue
 
         total_essential = essential_count if essential_count else 1
