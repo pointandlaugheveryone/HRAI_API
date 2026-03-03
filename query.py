@@ -1,10 +1,8 @@
-from typing import List, Dict
+from typing import List, Dict, Literal
 
 from config import conf
 from pos_extraction import text_to_ngrams
-
 from models.EntityResult import EntityResult
-from load import get_database, get_encoder, get_metadata
 
 from sentence_transformers import SentenceTransformer
 import numpy as np
@@ -53,7 +51,6 @@ def extract_from_resume(
             esco_uri=meta.get('esco_uri', ''),
             label=meta.get('preferred_label', ''),
             code=meta.get('code', ''),
-            isco_code=meta.get('isco_code', ''),
             description=meta.get('description', '')
         ))
     return results
@@ -65,7 +62,7 @@ def query_type(
         metadata: Dict[str:Dict],
         model: SentenceTransformer,
         ents: List[str],
-        label: str,
+        ent_type: Literal['occupation', 'skill','isco_group','skill_group'],
         min_score=conf.match_cutoff,
 ) -> List[EntityResult]:
 
@@ -90,14 +87,15 @@ def query_type(
 
     for id, score in ent_scores:
         meta = metadata.get(str(id), '')
+        if ent_type != meta.get('entity_type', ''): continue
+
         results.append(EntityResult(
             id=id,
             cosine_score=score,
             entity_type=meta.get('entity_type', ''),
             esco_uri=meta.get('esco_uri', ''),
-            label=label,
+            label=meta.get('preferred_label', ''),
             code=meta.get('code', ''),
-            isco_code=meta.get('isco_code', ''),
             description=meta.get('description', '')
         ))
 

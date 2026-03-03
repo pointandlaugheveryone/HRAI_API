@@ -1,39 +1,52 @@
-import json
-import os
-from typing import List, Optional
-from pathlib import Path
-
-import faiss
-
 from config import conf
 from load import get_encoder
-from models.EntityResult import EntityResult
-from models.RequestModel import ManualContentRequest, QueryRequest
-from models.ResponseModel import SkillsResponse, SuggestionResponse, DomainResponse, TargetJobResponse
 from query import query_type, extract_from_resume
-from suggestions import match_occupations, get_domain_skills
+from suggestions import get_expanded_skills, get_domain_reports
 from parse_doc import extract_text, UnsupportedFileTypeError
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+import json, os
+from pathlib import Path
+from typing import List, Optional
 
+from fastapi import FastAPI, UploadFile, File, HTTPException
+import faiss
+from pydantic import BaseModel
+
+
+class TextInputRequest(BaseModel):
+    occupations: Optional[List[str]]
+    skills: List[str]
+    min_set_score: Optional[float]
+
+class QueryRequest(BaseModel):
+    query: str
+    query_type: str
+    result_n: Optional[int]
 
 
 db = faiss.read_index(os.path.join(conf.db_dir, f"all.index"))
-
-with open(os.path.join(conf.data_dir, f"key_to_ent.json"), "r", encoding="utf-8") as f:
-    metadata = json.load(f)
-
+metadata = json.loads(Path(os.path.join(conf.data_dir, f"key_to_ent.json")).read_text(encoding='utf-8'))
 model = get_encoder()
+
 
 app = FastAPI(title="HRAI API")
 
+@app.post("/resume/skills")
+async def post_resume_get_skills(file: UploadFile = File(...)):
+    try:
+        file_bytes = await file.read()
+        text = extract_text(file_bytes, filename=file.filename)
 
-@app.post("/resume", response_model=SuggestionResponse)
-async def post_resume(
-    file: UploadFile = File(...),
-    target_job: Optional[str] = Form(None), # fastapi needs this to be form when multi part data is sent
-):
-    # noinspection DuplicatedCode
+    except UnsupportedFileTypeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    entities = extract_from_resume(text)
+    suggestions = get_expanded_skills(metadata, entities)
+    return suggestions
+
+
+@app.post("/resume/domains")
+async def post_resume_get_domains(file: UploadFile = File(...)):
     try:
         file_bytes = await file.read()
         text = extract_text(file_bytes, filename=file.filename or '')
@@ -41,73 +54,32 @@ async def post_resume(
         raise HTTPException(status_code=400, detail=str(e))
 
     entities = extract_from_resume(text)
-    skills = [e for e in entities if e.entity_type == 'skill']
-    occupations = [e for e in entities if e.entity_type == 'occupation']
-
-    suggestions = match_occupations(
-        skills=skills,
-        occupations=occupations,
-        target_job=None)
-
-    target_suggestion = None
-    if target_job:
-        target_suggestions = match_occupations(skills, None, target_job)
-        target_suggestion = target_suggestions[0] if target_suggestions else None
-
-    return SuggestionResponse(
-        top_suggestion=suggestions[0] if suggestions else None,
-        target_suggestion=target_suggestion)
+    suggestions = get_expanded_skills(metadata, entities)
+    domains = get_domain_reports(suggestions)
+    return domains
 
 
-@app.post("/resume/domains", response_model=DomainResponse)
-async def post_resume_domains(
-    file: UploadFile = File(...),
-):
-    # noinspection DuplicatedCode
-    try:
-        file_bytes = await file.read()
-        text = extract_text(file_bytes, filename=file.filename or '')
-    except UnsupportedFileTypeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    entities = extract_from_resume(text)
-    print(f'ent cnt {len(entities)}') # TODO remove
-    skills = [e for e in entities if e.entity_type == 'skill']
-    suggestions = match_occupations(skills, None, None)
-    domains = get_domain_skills(suggestions)
-
-    return DomainResponse(domains=domains)
+@app.post("/text/skills")
+async def post_text_get_skills(req:TextInputRequest): # assume frontend will handle occupations not being null (i will hate myself)
+    occs = query_type(db, metadata, model, req.occupations, 'occupation', min_set_score=req.min_set_score)
+    skills = query_type(db, metadata, model, req.skills, 'skill', min_set_score=req.min_set_score)
+    suggestions = get_expanded_skills(metadata, occs+skills)
+    return suggestions
 
 
-@app.post("/text", response_model=SkillsResponse)
-def post_text(req: ManualContentRequest):
-    skill_labels = [s.strip() for s in req.skills.split(",")]
-    skill_entities = query_type(skill_labels, 'skill')
-    occupation_entities = query_type(skill_labels, 'occupation')
+@app.post("/text/domains")
+def post_text_get_domains(req: TextInputRequest): # input a list of skills, occupations manually
+    occs = []
+    if TextInputRequest.occupations:
+        occs = query_type(db,metadata,model,req.occupations,'occupation', min_set_score=req.min_set_score)
+    skills = query_type(db,metadata,model,req.skills,'skill', min_set_score=req.min_set_score)
 
-    suggestions = match_occupations(skill_entities, occupation_entities, req.target_job)
-    return SkillsResponse(suggestions=suggestions)
-
-
-@app.post("/text/goal", response_model=TargetJobResponse)
-def post_text_goal(req: ManualContentRequest):
-    skill_labels = [s.strip() for s in req.skills.split(",")]
-    skill_entities = query_type(skill_labels, 'skill')
-    occupation_entities = query_type(skill_labels, 'occupation')
-
-    top_suggestions = match_occupations(skill_entities, occupation_entities, None)
-    top_suggestion = top_suggestions[0] if top_suggestions else None
-
-    target_suggestion = None
-    if req.target_job:
-        target_suggestions = match_occupations(skill_entities, None, req.target_job)
-        target_suggestion = target_suggestions[0] if target_suggestions else None
-
-    return TargetJobResponse(top_suggestion=top_suggestion, target_suggestion=target_suggestion)
+    suggestions = get_expanded_skills(metadata,skills+occs)
+    domains = get_domain_reports(suggestions)
+    return domains
 
 
-@app.post("/query", response_model=List[EntityResult])
-def query(req: QueryRequest):
-    label = req.entity_type
-    results = query_type([req.text], label, min_score=req.n if req.n else 5)
+@app.post("/query")
+def query(req: QueryRequest): # eg. find target occupation
+    results = query_type(db,metadata,model, req.query, req.query_type, min_score=req.result_n)
     return results

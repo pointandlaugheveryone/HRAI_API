@@ -8,6 +8,5 @@ class EntityResult:
     esco_uri: str
     label: str
     code: str
-    isco_code: str
     description: str
 
