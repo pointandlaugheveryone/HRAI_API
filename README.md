@@ -1,8 +1,11 @@
-### Endpoints
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/resume` | Pipeline 1: Upload PDF/DOCX/ODT + optional target job |
-| POST | `/resume/domains` | Pipeline 2: Upload PDF/DOCX/ODT → ISCO domain grouping |
-| POST | `/text` | Pipeline 3: Comma-separated skills → suggestions |
-| POST | `/text/goal` | Pipeline 4: Skills + target job → top match + target match |
-| POST | `/query` | Pipeline 5: Free text query → entity results |
+### Endpointy
+
+| method | path              |                                                                                                                                                   |
+|--------|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| POST   | `/resume/skills`  | PDF <br/>-> návrhy dalších dovedností                                                                                                             |
+| POST   | `/resume/domains` | PDF <br/>-> informace o možnostech na pozicích v oblastech pracovního trhu                                                                        |
+| POST   | `/text/skills`    | text <br/>-> návrhy dalších dovedností                                                                                                            |
+| POST   | `/text/domains`   | text (dovednosti + pracovní zkušenosti) <br/>-> informace o možnostech na pozicích v oblastech pracovního trhu                                    |
+| POST   | `/query`          | text + jestli hledat 'skill', 'occupation', 'isco_group' nebo 'skill_group', <br/>případně minimální podobnost pro rozpoznání <br/>-> výsledek dle databáze |
+
+další parametry lze nastavit v `config.py`
