@@ -85,6 +85,8 @@ def post_text_get_domains(req: TextInputRequest): # input a list of skills, occu
 
 
 @app.post("/query")
-def query(req: QueryRequest): # eg. find target occupation
-    results = query_type(db,metadata,model, [req.query], req.query_type, req.min_set_score)
+def query(req: QueryRequest): # eg. find target occupation // for some reason the min score parameter messes up the lookup when set to None, even with a default value
+    if req.min_set_score:
+        results = query_type(db,metadata,model, ents=req.query, ent_type=req.query_type, min_score=req.min_set_score)
+    else: results = query_type(db,metadata,model, ents=req.query, ent_type=req.query_type)
     return results

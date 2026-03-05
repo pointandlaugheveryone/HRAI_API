@@ -9,3 +9,4 @@ from typing import List
 class Suggestion:
     occupation: Occupation
     missing_skills: List[Skill]
+

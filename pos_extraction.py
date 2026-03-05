@@ -4,18 +4,9 @@ from ufal.udpipe import Model, Pipeline, ProcessingError
 
 from config import conf
 
-
 stopwords: set[str] = set(get_stop_words('czech'))
 tag_model: Model = Model.load(conf.tagger_name)
-
-
-def text_to_ngrams(text: str) -> List[str]:
-    """
-    create deduplicated n-grams for matching
-    """
-    error = ProcessingError()
-
-    pipeline = Pipeline(
+pipeline = Pipeline(
         tag_model,
         'tokenize',
         Pipeline.DEFAULT,  # tagger
@@ -23,13 +14,16 @@ def text_to_ngrams(text: str) -> List[str]:
         'conllu'
     )
 
+def text_to_ngrams(text: str) -> List[str]:
+    error = ProcessingError()
+
     conllu_text = pipeline.process(text, error)
     if error.occurred(): raise RuntimeError(error.message)
 
     sentences = []
     cnt_sentence = []
     for line in conllu_text.split('\n'):
-        if not line: # inbetween conllu sentences/segments; add already processed sentence, skip
+        if not line:  # inbetween conllu sentences/segments; add already processed sentence, skip
             if cnt_sentence: sentences.append(cnt_sentence)
             cnt_sentence = []
             continue
@@ -37,9 +31,9 @@ def text_to_ngrams(text: str) -> List[str]:
         # conllu format parsing
         parts = line.split('\t')
         if len(parts) != 10 or \
-            '-' in parts[0] or '.' in parts[0] or \
-            line.startswith('#'): # generated format comments
-                continue
+                '-' in parts[0] or '.' in parts[0] or \
+                line.startswith('#'):  # generated format comments
+            continue
 
         token = {
             'id': int(parts[0]),
@@ -63,25 +57,23 @@ def text_to_ngrams(text: str) -> List[str]:
         pos_tags = [t['upos'] for t in tokens]
 
         for n in range(1, conf.max_ngram + 1):
-            # iterate over sentence tokens to create ngrams of decreasing size
+            # iterate over sentence tokens to check ngrams of decreasing size
             for i in range(len(tokens) - n + 1):
                 span_tokens = tokens[i:i + n]
                 span_forms = forms[i:i + n]
                 span_upos = pos_tags[i:i + n]
-
-                # skill words are mostly nouns; skip ngrams without any
-                if not any(tag in {'NOUN', 'ADJ'}
-                           for tag in span_upos):
-                    continue
 
                 first = span_tokens[0]
                 last = span_tokens[-1]
                 first_word = first['form'].lower()
                 last_word = last['form'].lower()
 
-                # drop spans starting/ending as uncommon POS to reduce ngram count
-                if first['upos'] in {'CCONJ', 'SCONJ'} or \
-                        last['upos'] in {'CCONJ', 'SCONJ', 'ADJ'} or \
+                # skill words are mostly nouns; skip ngrams without any
+                if not any(tag in {'NOUN', 'PROPN', 'ADJ'} for tag in span_upos):
+                    continue
+
+                if first['upos'] in {'CCONJ', 'SCONJ', 'NUM','DET'} or \
+                        last['upos'] in {'CCONJ', 'SCONJ', 'ADJ', 'ADV', 'VERB', 'NUM','AUX','ADV'} or \
                         first_word in stopwords or \
                         last_word in stopwords:
                     continue
@@ -91,3 +83,6 @@ def text_to_ngrams(text: str) -> List[str]:
                 ngrams.add(ngram_text.lower())
 
     return list(ngrams)
+
+
+print(pipeline.process("jakéhokoliv přinejmenším"))

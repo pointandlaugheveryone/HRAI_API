@@ -65,16 +65,16 @@ def query_type(
         db,
         metadata: Dict[str:Dict],
         model: SentenceTransformer,
-        ents: Optional[List[str]],
-        ent_type: Literal['occupation', 'skill','isco_group','skill_group'],
-        min_score=conf.match_cutoff,
-) -> List[EntityResult]:
 
-    if not ents: return []
+        ents: List[str],
+        ent_type: str,
+        min_score: float =conf.match_cutoff,
+) -> List[EntityResult]:
 
     results: List[EntityResult] = []
     ent_scores = []
     other_results:List[EntityResult] = []
+
     for ent in ents:
         query_vector = model.encode(
             [ent],
@@ -92,11 +92,10 @@ def query_type(
             ent_scores.append((str(id), float(score)))
 
     for id, score in ent_scores:
-        id_str = str(id)
-        meta = metadata.get(id_str, {})
+        meta = metadata.get(id, {})
 
         res = EntityResult(
-            id=id_str,
+            id=id,
             cosine_score=score,
             entity_type=meta.get('entity_type', ''),
             esco_uri=meta.get('esco_uri', ''),
@@ -104,9 +103,11 @@ def query_type(
             code=meta.get('code', ''),
             description=meta.get('description', '')
         )
-        if ent_type != meta.get('entity_type', ''):
+
+        if ent_type != meta.get['entity_type']:
             other_results.append(res)
             continue
-        results.append(res)
+
+        else: results.append(res)
 
     return results if len(results) > 0 else other_results

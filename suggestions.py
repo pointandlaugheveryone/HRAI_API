@@ -8,6 +8,31 @@ from load import get_relations
 from typing import Dict, List
 
 
+def _count_essential_skills(skills: List[Skill]) -> int:
+    return sum(1 for skill in skills if skill.relation_type == 'essential')
+
+
+def _is_better_suggestion(new: Suggestion, current: Suggestion) -> bool:
+    new_essential = _count_essential_skills(new.missing_skills)
+    current_essential = _count_essential_skills(current.missing_skills)
+    if new_essential != current_essential:
+        return new_essential < current_essential
+
+    if len(new.missing_skills) != len(current.missing_skills):
+        return len(new.missing_skills) < len(current.missing_skills)
+
+    return (new.occupation.cosine_score or 0) > (current.occupation.cosine_score or 0)
+
+
+def deduplicate(suggestions: List[Suggestion]) -> List[Suggestion]:
+    best_by_occ: Dict[str, Suggestion] = {}
+    for suggestion in suggestions:
+        current = best_by_occ.get(suggestion.occupation.id)
+        if current is None or _is_better_suggestion(suggestion, current):
+            best_by_occ[suggestion.occupation.id] = suggestion
+    return list(best_by_occ.values())
+
+
 def get_expanded_skills(
     metadata:Dict[str,Dict],
     entities: List[EntityResult]
@@ -51,18 +76,18 @@ def get_expanded_skills(
             code=occ.code,
             description=occ_meta.get('description',''),
         )
-
         suggestions.append(Suggestion(
             occupation=occ_match,
             missing_skills=missing_skills
         ))
 
-    return suggestions
+    return deduplicate(suggestions)
 
 
 def get_domain_reports(suggestions: List[Suggestion]) -> List[DomainResult]: #TODO: add param target_domain (eg. it)
     domain_to_suggestions: Dict[str, List[Suggestion]] = {}
-    for suggestion in suggestions:
+    deduped_suggestions = deduplicate(suggestions)
+    for suggestion in deduped_suggestions:
         code = str(suggestion.occupation.code) or ''
         domain_key = code[:2]
         domain_name = CODE_TO_DOMAIN.get(domain_key, 'Other')
