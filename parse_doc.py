@@ -1,8 +1,6 @@
 from io import BytesIO
 
 from pypdf import PdfReader
-from docx import Document as DocxDocument
-from odfdo import Document as OdfDocument
 
 
 extensions = {'.pdf'}

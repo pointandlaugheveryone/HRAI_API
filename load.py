@@ -1,8 +1,5 @@
 import os, json
-from functools import lru_cache
-
 from config import conf
-
 from sentence_transformers import models, SentenceTransformer
 
 

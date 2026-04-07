@@ -1,4 +1,4 @@
-from typing import List, Dict, Literal, Optional
+from typing import List, Dict
 
 from config import conf
 from pos_extraction import text_to_ngrams
@@ -12,7 +12,7 @@ from load import get_encoder
 import faiss, os, json
 
 
-# noinspection DuplicatedCode
+
 def extract_from_resume(
         db,
         metadata: Dict[str:Dict],
@@ -60,12 +60,11 @@ def extract_from_resume(
     return results
 
 
-# noinspection DuplicatedCode
+
 def query_type(
         db,
         metadata: Dict[str:Dict],
         model: SentenceTransformer,
-
         ents: List[str],
         ent_type: str,
         min_score: float =conf.match_cutoff,
@@ -104,7 +103,7 @@ def query_type(
             description=meta.get('description', '')
         )
 
-        if ent_type != meta.get['entity_type']:
+        if ent_type != meta.get('entity_type',''):
             other_results.append(res)
             continue
 
