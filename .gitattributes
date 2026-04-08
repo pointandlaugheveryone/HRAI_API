@@ -1,0 +1,6 @@
+*.pkl filter=lfs diff=lfs merge=lfs -text
+_czech_pdt_2.5.udpipe filter=lfs diff=lfs merge=lfs -text
+*.index filter=lfs diff=lfs merge=lfs -text
+data/cs_resumes.json filter=lfs diff=lfs merge=lfs -text
+data/occ_to_skill.json filter=lfs diff=lfs merge=lfs -text
+data/skill_to_occ.json filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,10 @@
+env/
+.env
+*__pycache__/
+.idea/
+
+# jupyter
+.ipynb_checkpoints/
+*pycharm-support-libs/
+
+*Životopis*.pdf
